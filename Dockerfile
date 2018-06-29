@@ -2,6 +2,8 @@ FROM alpine
 
 MAINTAINER Daniel Lundborg <daniel.lundborg@gmail.com>
 
+ENV AVOCADO_VERSION 62.0
+
 RUN apk add --update \
     python \
     python-dev \
@@ -16,6 +18,8 @@ RUN apk add --update \
     shadow \
     git \
     make \
+    libffi-dev \
+    openssl-dev \
     && rm -rf /var/cache/apk/*
 
 COPY certs/*.* /usr/local/share/ca-certificates/
@@ -34,14 +38,18 @@ RUN \
 RUN mkdir -p /etc/avocado/conf.d
 COPY logs_dir.conf /etc/avocado/conf.d/
 
-# Install avocado framework and the html plugin
+# Install avocado framework and the html, docker and remote plugins
 RUN \
     git clone git://github.com/avocado-framework/avocado.git && \
     cd avocado && \
-    git checkout tags/56.0 && \
+    git checkout tags/$AVOCADO_VERSION && \
     make requirements && \
     python setup.py install && \
     cd optional_plugins/html && \
+    python setup.py install && \
+    cd ../runner_docker && \
+    python setup.py install && \
+    cd ../runner_remote && \
     python setup.py install
 
 # Install ssh keys and change permissions on the files
@@ -64,4 +72,3 @@ ADD docker_entry.sh /usr/local/bin/docker_entry.sh
 RUN chmod 755 /usr/local/bin/docker_entry.sh
 
 ENTRYPOINT ["docker_entry.sh"]
-
